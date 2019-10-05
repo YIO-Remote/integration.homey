@@ -3,8 +3,8 @@
 #include <QJsonArray>
 
 #include "homey.h"
-#include "../../entities/entity.h"
-#include "../../entities/entities.h"
+#include "../remote-software/sources/entities/entity.h"
+#include "../remote-software/sources/entities/entities.h"
 #include "math.h"
 
 void Homey::initialize(int integrationId, const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api, QObject *configObj)

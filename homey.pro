@@ -2,11 +2,11 @@ TEMPLATE        = lib
 CONFIG         += plugin
 QT             += websockets core quick
 HEADERS         = homey.h \
-                  ../integration.h \
-                  ../integrationinterface.h
+                  ../remote-software/sources/integrations/integration.h \
+                  ../remote-software/sources/integrations/integrationinterface.h
 SOURCES         = homey.cpp
 TARGET          = homey
-DESTDIR         = ../../../plugins
+DESTDIR         = ../remote-software/plugins
 
 # install
 unix {
