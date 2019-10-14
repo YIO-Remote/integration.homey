@@ -7,16 +7,41 @@
 #include "../remote-software/sources/entities/entities.h"
 #include "math.h"
 
-void Homey::initialize(int integrationId, const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api, QObject *configObj)
+QMap<QObject *, QVariant> Homey::create(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api, QObject *configObj)
 {
-    setIntegrationId(integrationId);
+    QMap<QObject *, QVariant> returnData;
 
-    for (QVariantMap::const_iterator iter = config.begin(); iter != config.end(); ++iter)
+    QVariantList data;
+    QString mdns;
+
+    for (QVariantMap::const_iterator iter = config.begin(); iter != config.end(); ++iter) {
+        if (iter.key() == "mdns") {
+            mdns = iter.value().toString();
+        } else if (iter.key() == "data") {
+            data = iter.value().toList();
+        }
+    }
+
+    for (int i=0; i<data.length(); i++)
     {
-        if (iter.key() == "type")
-            setType(iter.value().toString());
-        else if (iter.key() == "friendly_name")
+        HomeyBase* ha = new HomeyBase();
+        ha->setup(data[i].toMap(), entities, notifications, api, configObj);
+
+        QVariantMap d = data[i].toMap();
+        d.insert("mdns", mdns);
+        returnData.insert(ha, d);
+    }
+
+    return returnData;
+}
+
+void HomeyBase::setup(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api, QObject *configObj)
+{
+    for (QVariantMap::const_iterator iter = config.begin(); iter != config.end(); ++iter) {
+        if (iter.key() == "friendly_name")
             setFriendlyName(iter.value().toString());
+        else if (iter.key() == "id")
+            setIntegrationId(iter.value().toString());
     }
 
     // crate a new instance and pass on variables
@@ -28,31 +53,31 @@ void Homey::initialize(int integrationId, const QVariantMap& config, QObject* en
     // connect signals and slots
     QObject::connect(&m_thread, &QThread::finished, HAThread, &QObject::deleteLater);
 
-    QObject::connect(this, &Homey::connectSignal, HAThread, &HomeyThread::connect);
-    QObject::connect(this, &Homey::disconnectSignal, HAThread, &HomeyThread::disconnect);
-    QObject::connect(this, &Homey::sendCommandSignal, HAThread, &HomeyThread::sendCommand);
+    QObject::connect(this, &HomeyBase::connectSignal, HAThread, &HomeyThread::connect);
+    QObject::connect(this, &HomeyBase::disconnectSignal, HAThread, &HomeyThread::disconnect);
+    QObject::connect(this, &HomeyBase::sendCommandSignal, HAThread, &HomeyThread::sendCommand);
 
-    QObject::connect(HAThread, &HomeyThread::stateChanged, this, &Homey::stateHandler);
+    QObject::connect(HAThread, &HomeyThread::stateChanged, this, &HomeyBase::stateHandler);
 
     m_thread.start();
 }
 
-void Homey::connect()
+void HomeyBase::connect()
 {
     emit connectSignal();
 }
 
-void Homey::disconnect()
+void HomeyBase::disconnect()
 {
     emit disconnectSignal();
 }
 
-void Homey::sendCommand(const QString &type, const QString &entity_id, const QString &command, const QVariant &param)
+void HomeyBase::sendCommand(const QString &type, const QString &entity_id, const QString &command, const QVariant &param)
 {
     emit sendCommandSignal(type, entity_id, command, param);
 }
 
-void Homey::stateHandler(int state)
+void HomeyBase::stateHandler(int state)
 {
     if (state == 0)
     {
