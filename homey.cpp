@@ -106,6 +106,8 @@ HomeyThread::HomeyThread(const QVariantMap &config, QObject *entities, QObject *
             QVariantMap map = iter.value().toMap();
             m_ip = map.value("ip").toString();
             m_token = map.value("token").toString();
+        } else if (iter.key() == "id") {
+            m_id = iter.value().toString();
         }
     }
     m_entities = qobject_cast<EntitiesInterface *>(entities);
@@ -160,7 +162,7 @@ void HomeyThread::onTextMessageReceived(const QString &message)
     if (type == "command" && map.value("command").toString() == "get_config")
     {
         // get loaded homey entities
-        QList<QObject *> es = m_entities->getByIntegration("homey");
+        QList<QObject *> es = m_entities->getByIntegration(m_id);
 
         // create return map object
         QVariantMap returnData;

@@ -101,6 +101,8 @@ private:
     YioAPIInterface*                m_api;
     ConfigInterface*                m_config;
 
+    QString                         m_id;
+
     QString                         m_ip;
     QString                         m_token;
     QWebSocket*                     m_socket;
