@@ -7,16 +7,41 @@
 #include "../remote-software/sources/entities/entities.h"
 #include "math.h"
 
-void Homey::initialize(int integrationId, const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api, QObject *configObj)
+QMap<QObject *, QVariant> Homey::create(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api, QObject *configObj)
 {
-    setIntegrationId(integrationId);
+    QMap<QObject *, QVariant> returnData;
 
-    for (QVariantMap::const_iterator iter = config.begin(); iter != config.end(); ++iter)
+    QVariantList data;
+    QString mdns;
+
+    for (QVariantMap::const_iterator iter = config.begin(); iter != config.end(); ++iter) {
+        if (iter.key() == "mdns") {
+            mdns = iter.value().toString();
+        } else if (iter.key() == "data") {
+            data = iter.value().toList();
+        }
+    }
+
+    for (int i=0; i<data.length(); i++)
     {
-        if (iter.key() == "type")
-            setType(iter.value().toString());
-        else if (iter.key() == "friendly_name")
+        HomeyBase* ha = new HomeyBase();
+        ha->setup(data[i].toMap(), entities, notifications, api, configObj);
+
+        QVariantMap d = data[i].toMap();
+        d.insert("mdns", mdns);
+        returnData.insert(ha, d);
+    }
+
+    return returnData;
+}
+
+void HomeyBase::setup(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api, QObject *configObj)
+{
+    for (QVariantMap::const_iterator iter = config.begin(); iter != config.end(); ++iter) {
+        if (iter.key() == "friendly_name")
             setFriendlyName(iter.value().toString());
+        else if (iter.key() == "id")
+            setIntegrationId(iter.value().toString());
     }
 
     // crate a new instance and pass on variables
@@ -28,31 +53,31 @@ void Homey::initialize(int integrationId, const QVariantMap& config, QObject* en
     // connect signals and slots
     QObject::connect(&m_thread, &QThread::finished, HAThread, &QObject::deleteLater);
 
-    QObject::connect(this, &Homey::connectSignal, HAThread, &HomeyThread::connect);
-    QObject::connect(this, &Homey::disconnectSignal, HAThread, &HomeyThread::disconnect);
-    QObject::connect(this, &Homey::sendCommandSignal, HAThread, &HomeyThread::sendCommand);
+    QObject::connect(this, &HomeyBase::connectSignal, HAThread, &HomeyThread::connect);
+    QObject::connect(this, &HomeyBase::disconnectSignal, HAThread, &HomeyThread::disconnect);
+    QObject::connect(this, &HomeyBase::sendCommandSignal, HAThread, &HomeyThread::sendCommand);
 
-    QObject::connect(HAThread, &HomeyThread::stateChanged, this, &Homey::stateHandler);
+    QObject::connect(HAThread, &HomeyThread::stateChanged, this, &HomeyBase::stateHandler);
 
     m_thread.start();
 }
 
-void Homey::connect()
+void HomeyBase::connect()
 {
     emit connectSignal();
 }
 
-void Homey::disconnect()
+void HomeyBase::disconnect()
 {
     emit disconnectSignal();
 }
 
-void Homey::sendCommand(const QString &type, const QString &entity_id, const QString &command, const QVariant &param)
+void HomeyBase::sendCommand(const QString &type, const QString &entity_id, const QString &command, const QVariant &param)
 {
     emit sendCommandSignal(type, entity_id, command, param);
 }
 
-void Homey::stateHandler(int state)
+void HomeyBase::stateHandler(int state)
 {
     if (state == 0)
     {
@@ -307,54 +332,87 @@ void HomeyThread::updateBlind(Entity *entity, const QVariantMap &attr)
 
 void HomeyThread::updateMediaPlayer(Entity *entity, const QVariantMap &attr)
 {
-    //    QVariantMap attributes;
+    /*  capabilities:
+       [ 'speaker_album',
+         'speaker_artist',
+         'speaker_duration',
+         'speaker_next',
+         'speaker_playing',
+         'speaker_position',
+         'speaker_prev',
+         'speaker_repeat',
+         'volume_set',
+         'volume_mute',
+         'speaker_shuffle',
+         'speaker_track',
+         'sonos_group',
+         'sonos_audio_clip' ]
+    */
+    QVariantMap attributes;
 
-    //    //state
-    //    if (attr.value("state").toString() == "off") {
-    //        attributes.insert("state", 0);
-    //    } else if (attr.value("state").toString() == "on") {
-    //        attributes.insert("state", 1);
-    //    } else if (attr.value("state").toString() == "idle") {
-    //        attributes.insert("state", 2);
-    //    } else if (attr.value("state").toString() == "playing") {
-    //        attributes.insert("state", 3);
-    //    } else {
-    //        attributes.insert("state", 0);
-    //    }
+    //state
+    if (attr.contains("speaker_playing"))
+    {
+        if (attr.value("speaker_playing").toBool())
+        {
+            attributes.insert("state", 3); //Playing
+            printf("Setting state 2");
+        }
+        else
+        {
+            attributes.insert("state", 2); //idle
+            printf("Setting state 3");
+        }
+    }
 
-    //    // source
-    //    if (entity->supported_features().indexOf("SOURCE") > -1 && attr.value("attributes").toMap().contains("source")) {
-    //        attributes.insert("source", attr.value("attributes").toMap().value("source").toString());
-    //    }
+    if (attr.contains("onoff"))
+    {
+        if (attr.value("onoff").toBool())
+        {
+            attributes.insert("state", 1); //On
+        }
+        else
+        {
+            attributes.insert("state", 0); //Off
+        }
+    }
 
-    //    // volume
-    //    if (entity->supported_features().indexOf("VOLUME") > -1 && attr.value("attributes").toMap().contains("volume_level")) {
-    //        attributes.insert("volume", attr.value("attributes").toMap().value("volume_level").toDouble());
-    //    }
+    // source
+    //if (entity->supported_features().indexOf("SOURCE") > -1 && attr.value("attributes").toMap().contains("source")) {
+    //    attributes.insert("source", attr.value("attributes").toMap().value("source").toString());
+    //}
 
-    //    // media type
-    //    if (entity->supported_features().indexOf("MEDIA_TYPE") > -1 && attr.value("attributes").toMap().contains("media_content_type")) {
-    //        attributes.insert("mediaType", attr.value("attributes").toMap().value("media_content_type").toString());
-    //    }
+    // volume  //volume_set
+    if (attr.contains("volume_set"))
+    {
+        attributes.insert("volume", attr.value("volume_set").toDouble());
+    }
 
-    //    // media image
-    //    if (entity->supported_features().indexOf("MEDIA_IMAGE") > -1 && attr.value("attributes").toMap().contains("entity_picture")) {
-    //        QString url = attr.value("attributes").toMap().value("entity_picture").toString();
-    //        QString fullUrl = QString("http://").append(m_ip).append(url);
-    //        attributes.insert("mediaImage", fullUrl);
-    //    }
+    // media type
+    if (entity->supported_features().indexOf("MEDIA_TYPE") > -1 && attr.value("attributes").toMap().contains("media_content_type"))
+    {
+        attributes.insert("mediaType", attr.value("attributes").toMap().value("media_content_type").toString());
+    }
 
-    //    // media title
-    //    if (entity->supported_features().indexOf("MEDIA_TITLE") > -1 && attr.value("attributes").toMap().contains("media_title")) {
-    //        attributes.insert("mediaTitle", attr.value("attributes").toMap().value("media_title").toString());
-    //    }
+    // media image
+    if (attr.contains("album_art"))
+    {
+        attributes.insert("mediaImage", attr.value("album_art"));
+    }
 
-    //    // media artist
-    //    if (entity->supported_features().indexOf("MEDIA_ARTIST") > -1 && attr.value("attributes").toMap().contains("media_artist")) {
-    //        attributes.insert("mediaArtist", attr.value("attributes").toMap().value("media_artist").toString());
-    //    }
+    // media title
+    if (attr.contains("speaker_track"))
+    {
+        attributes.insert("mediaTitle", attr.value("speaker_track").toString());
+    }
 
-    //    m_entities->update(entity->entity_id(), attributes);
+    // media artist
+    if (attr.contains("speaker_artist"))
+    {
+        attributes.insert("mediaArtist", attr.value("speaker_artist").toString());
+    }
+
+    m_entities->update(entity->entity_id(), attributes);
 }
 
 void HomeyThread::setState(int state)
@@ -395,6 +453,9 @@ void HomeyThread::sendCommand(const QString &type, const QString &entity_id, con
     QVariantMap map;
     //example
     //{"command":"onoff","deviceId":"78f3ab16-c622-4bd7-aebf-3ca981e41375","type":"command","value":true}
+
+    QVariantMap attributes;
+
     map.insert("type", "command");
 
     map.insert("deviceId", QVariant(entity_id));
@@ -467,11 +528,14 @@ void HomeyThread::sendCommand(const QString &type, const QString &entity_id, con
         }
     }
     if (type == "media_player")
+
     {
         if (command == "VOLUME_SET")
         {
             map.insert("command", "volume_set");
             map.insert("value", param);
+            attributes.insert("volume", param);
+            m_entities->update(entity_id, attributes); //buggy homey fix
             webSocketSendCommand(map);
         }
         else if (command == "PLAY")
@@ -481,6 +545,12 @@ void HomeyThread::sendCommand(const QString &type, const QString &entity_id, con
             webSocketSendCommand(map);
         }
         else if (command == "STOP")
+        {
+            map.insert("command", "speaker_playing");
+            map.insert("value", false);
+            webSocketSendCommand(map);
+        }
+        else if (command == "PAUSE")
         {
             map.insert("command", "speaker_playing");
             map.insert("value", false);
