@@ -7,7 +7,7 @@
 #include "../remote-software/sources/entities/entities.h"
 #include "math.h"
 
-QMap<QObject *, QVariant> Homey::create(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api, QObject *configObj)
+void Homey::create(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api, QObject *configObj)
 {
     QMap<QObject *, QVariant> returnData;
 
@@ -32,7 +32,7 @@ QMap<QObject *, QVariant> Homey::create(const QVariantMap &config, QObject *enti
         returnData.insert(ha, d);
     }
 
-    return returnData;
+    emit createDone(returnData);
 }
 
 void HomeyBase::setup(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api, QObject *configObj)
