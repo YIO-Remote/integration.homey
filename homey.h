@@ -15,7 +15,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //// HOMEY FACTORY
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-class Homey : public QObject, IntegrationInterface
+class Homey : public IntegrationInterface
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "YIO.IntegrationInterface" FILE "homey.json")
@@ -24,7 +24,7 @@ class Homey : public QObject, IntegrationInterface
 public:
     explicit Homey() {}
 
-    QMap<QObject *, QVariant> create          (const QVariantMap& config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj) override;
+    void create                     (const QVariantMap& config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj) override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
