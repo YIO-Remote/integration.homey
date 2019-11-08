@@ -36,7 +36,7 @@ class HomeyBase : public Integration
     Q_OBJECT
 
 public:
-    explicit HomeyBase() {}
+    explicit HomeyBase(QObject *parent);
 
     Q_INVOKABLE void setup          (const QVariantMap& config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj);
     Q_INVOKABLE void connect	    ();

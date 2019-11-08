@@ -24,7 +24,7 @@ void Homey::create(const QVariantMap &config, QObject *entities, QObject *notifi
 
     for (int i=0; i<data.length(); i++)
     {
-        HomeyBase* ha = new HomeyBase();
+        HomeyBase* ha = new HomeyBase(this);
         ha->setup(data[i].toMap(), entities, notifications, api, configObj);
 
         QVariantMap d = data[i].toMap();
@@ -34,6 +34,11 @@ void Homey::create(const QVariantMap &config, QObject *entities, QObject *notifi
     }
 
     emit createDone(returnData);
+}
+
+HomeyBase::HomeyBase(QObject *parent)
+{
+    this->setParent(parent);
 }
 
 void HomeyBase::setup(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api, QObject *configObj)
