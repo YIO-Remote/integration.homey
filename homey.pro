@@ -21,6 +21,7 @@ SOURCES         = homey.cpp
 TARGET          = homey
 
 # Configure destination path. DESTDIR is set in qmake-destination-path.pri
+DESTDIR = $$DESTDIR/plugins
 OBJECTS_DIR = $$PWD/build/$$DESTINATION_PATH/obj
 MOC_DIR = $$PWD/build/$$DESTINATION_PATH/moc
 RCC_DIR = $$PWD/build/$$DESTINATION_PATH/qrc
