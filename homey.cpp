@@ -267,7 +267,7 @@ int HomeyThread::convertBrightnessToPercentage(float value)
 
 void HomeyThread::updateEntity(const QString &entity_id, const QVariantMap &attr)
 {
-    Entity *entity = (Entity *)m_entities->get(entity_id);
+    EntityInterface *entity = m_entities->getEntityInterface(entity_id);
     if (entity)
     {
         if (entity->type() == "light")
@@ -285,7 +285,7 @@ void HomeyThread::updateEntity(const QString &entity_id, const QVariantMap &attr
     }
 }
 
-void HomeyThread::updateLight(Entity *entity, const QVariantMap &attr)
+void HomeyThread::updateLight(EntityInterface *entity, const QVariantMap &attr)
 {
     QVariantMap attributes;
 
@@ -319,7 +319,7 @@ void HomeyThread::updateLight(Entity *entity, const QVariantMap &attr)
     m_entities->update(entity->entity_id(), attributes);
 }
 
-void HomeyThread::updateBlind(Entity *entity, const QVariantMap &attr)
+void HomeyThread::updateBlind(EntityInterface *entity, const QVariantMap &attr)
 {
     //    QVariantMap attributes;
 
@@ -338,7 +338,7 @@ void HomeyThread::updateBlind(Entity *entity, const QVariantMap &attr)
     //    m_entities->update(entity->entity_id(), attributes);
 }
 
-void HomeyThread::updateMediaPlayer(Entity *entity, const QVariantMap &attr)
+void HomeyThread::updateMediaPlayer(EntityInterface *entity, const QVariantMap &attr)
 {
     /*  capabilities:
        [ 'speaker_album',
