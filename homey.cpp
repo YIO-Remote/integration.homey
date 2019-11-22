@@ -41,6 +41,14 @@ HomeyBase::HomeyBase(QObject *parent)
     this->setParent(parent);
 }
 
+HomeyBase::~HomeyBase()
+{
+    if (m_thread.isRunning()) {
+        m_thread.exit();
+        m_thread.wait(5000);
+    }
+}
+
 void HomeyBase::setup(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api, QObject *configObj)
 {
     for (QVariantMap::const_iterator iter = config.begin(); iter != config.end(); ++iter) {
