@@ -401,7 +401,7 @@ void HomeyThread::updateMediaPlayer(EntityInterface *entity, const QVariantMap &
     // volume  //volume_set
     if (attr.contains("volume_set"))
     {
-        attributes.insert("volume", attr.value("volume_set").toDouble());
+        attributes.insert("volume", int(round(attr.value("volume_set").toDouble()*100)));
     }
 
     // media type
@@ -549,7 +549,7 @@ void HomeyThread::sendCommand(const QString &type, const QString &entity_id, con
         if (command == "VOLUME_SET")
         {
             map.insert("command", "volume_set");
-            map.insert("value", param);
+            map.insert("value", param.toDouble()/100);
             attributes.insert("volume", param);
             m_entities->update(entity_id, attributes); //buggy homey fix
             webSocketSendCommand(map);
