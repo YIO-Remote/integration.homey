@@ -176,7 +176,7 @@ void HomeyThread::onTextMessageReceived(const QString &message)
     if (type == "command" && map.value("command").toString() == "get_config")
     {
         // get loaded homey entities
-        QList<QObject *> es = m_entities->getByIntegration(m_id);
+        QList<EntityInterface *> es = m_entities->getByIntegration(m_id);
 
         // create return map object
         QVariantMap returnData;
@@ -189,10 +189,10 @@ void HomeyThread::onTextMessageReceived(const QString &message)
 
         // interate throug the list and get the entity ids
 
-        foreach (QObject *value, es)
+        foreach (EntityInterface *value, es)
         {
-            list.append(value->property("entity_id").toString());
-            qDebug() << value->property("entity_id").toString();
+            list.append(value->entity_id());
+            qDebug() << value->entity_id();
         }
         qDebug() << "LIST" << list;
         // insert list to data key in response
