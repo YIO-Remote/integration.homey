@@ -3,9 +3,13 @@
 #include <QJsonArray>
 
 #include "homey.h"
-#include "../remote-software/sources/entities/entity.h"
-#include "../remote-software/sources/entities/entities.h"
 #include "math.h"
+#include "../remote-software/sources/entities/lightinterface.h"
+#include "../remote-software/sources/entities/blindinterface.h"
+#include "../remote-software/sources/entities/mediaplayerinterface.h"
+
+IntegrationInterface::~IntegrationInterface()
+{}
 
 void Homey::create(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api, QObject *configObj)
 {
@@ -24,7 +28,7 @@ void Homey::create(const QVariantMap &config, QObject *entities, QObject *notifi
 
     for (int i=0; i<data.length(); i++)
     {
-        HomeyBase* ha = new HomeyBase(this);
+        HomeyBase* ha = new HomeyBase(m_log, this);
         ha->setup(data[i].toMap(), entities, notifications, api, configObj);
 
         QVariantMap d = data[i].toMap();
@@ -36,7 +40,8 @@ void Homey::create(const QVariantMap &config, QObject *entities, QObject *notifi
     emit createDone(returnData);
 }
 
-HomeyBase::HomeyBase(QObject *parent)
+HomeyBase::HomeyBase(QLoggingCategory& log, QObject *parent) :
+    m_log(log)
 {
     this->setParent(parent);
 }
@@ -51,15 +56,10 @@ HomeyBase::~HomeyBase()
 
 void HomeyBase::setup(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api, QObject *configObj)
 {
-    for (QVariantMap::const_iterator iter = config.begin(); iter != config.end(); ++iter) {
-        if (iter.key() == "friendly_name")
-            setFriendlyName(iter.value().toString());
-        else if (iter.key() == "id")
-            setIntegrationId(iter.value().toString());
-    }
+    Integration::setup (config, entities);
 
     // crate a new instance and pass on variables
-    HomeyThread *HAThread = new HomeyThread(config, entities, notifications, api, configObj);
+    HomeyThread *HAThread = new HomeyThread(config, entities, notifications, api, configObj, m_log);
 
     // move to thread
     HAThread->moveToThread(&m_thread);
@@ -111,7 +111,9 @@ void HomeyBase::stateHandler(int state)
 //// Homey THREAD CLASS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-HomeyThread::HomeyThread(const QVariantMap &config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj)
+HomeyThread::HomeyThread(const QVariantMap &config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj,
+                         QLoggingCategory& log) :
+    m_log(log)
 {
     for (QVariantMap::const_iterator iter = config.begin(); iter != config.end(); ++iter)
     {
@@ -192,9 +194,9 @@ void HomeyThread::onTextMessageReceived(const QString &message)
         foreach (EntityInterface *value, es)
         {
             list.append(value->entity_id());
-            qDebug() << value->entity_id();
+            qCDebug(m_log) << value->entity_id();
         }
-        qDebug() << "LIST" << list;
+        qCDebug(m_log) << "LIST" << list;
         // insert list to data key in response
         returnData.insert("devices", list);
 
@@ -295,21 +297,22 @@ void HomeyThread::updateEntity(const QString &entity_id, const QVariantMap &attr
 
 void HomeyThread::updateLight(EntityInterface *entity, const QVariantMap &attr)
 {
-    QVariantMap attributes;
 
     //onoff to state.
     if (attr.contains("onoff"))
     {
-        attributes.insert("state", attr.value("onoff"));
+        //attributes.insert("state", attr.value("onoff"));
+        entity->setState(attr.value("onoff").toBool() ? LightDef::ON : LightDef::OFF);
         printf("Setting state");
     }
 
     // brightness
-    if (entity->supported_features().indexOf("BRIGHTNESS") > -1)
+    if (entity->isSupported("BRIGHTNESS"))
     {
         if (attr.contains("dim"))
         {
-            attributes.insert("brightness", convertBrightnessToPercentage(attr.value("dim").toFloat()));
+            //attributes.insert("brightness", convertBrightnessToPercentage(attr.value("dim").toFloat()));
+            entity->updateAttrByIndex(LightDef::BRIGHTNESS, convertBrightnessToPercentage(attr.value("dim").toFloat()));
             printf("Setting brightness");
         }
     }
@@ -321,10 +324,9 @@ void HomeyThread::updateLight(EntityInterface *entity, const QVariantMap &attr)
         QVariantList cl(color.toList());
         char buffer[10];
         sprintf(buffer, "#%02X%02X%02X", cl.value(0).toInt(), cl.value(1).toInt(), cl.value(2).toInt());
-        attributes.insert("color", buffer);
+        //attributes.insert("color", buffer);
+        entity->updateAttrByIndex(LightDef::COLOR, buffer);
     }
-
-    m_entities->update(entity->entity_id(), attributes);
 }
 
 void HomeyThread::updateBlind(EntityInterface *entity, const QVariantMap &attr)
@@ -364,19 +366,21 @@ void HomeyThread::updateMediaPlayer(EntityInterface *entity, const QVariantMap &
          'sonos_group',
          'sonos_audio_clip' ]
     */
-    QVariantMap attributes;
+    //QVariantMap attributes;
 
     //state
     if (attr.contains("speaker_playing"))
     {
         if (attr.value("speaker_playing").toBool())
         {
-            attributes.insert("state", 3); //Playing
+            //attributes.insert("state", 3); //Playing
+            entity->setState(MediaPlayerDef::PLAYING);
             printf("Setting state 2");
         }
         else
         {
-            attributes.insert("state", 2); //idle
+            //attributes.insert("state", 2); //idle
+            entity->setState(MediaPlayerDef::IDLE);
             printf("Setting state 3");
         }
     }
@@ -385,11 +389,13 @@ void HomeyThread::updateMediaPlayer(EntityInterface *entity, const QVariantMap &
     {
         if (attr.value("onoff").toBool())
         {
-            attributes.insert("state", 1); //On
+            //attributes.insert("state", 1); //On
+            entity->setState(MediaPlayerDef::ON);
         }
         else
         {
-            attributes.insert("state", 0); //Off
+            //attributes.insert("state", 0); //Off
+            entity->setState(MediaPlayerDef::OFF);
         }
     }
 
@@ -401,34 +407,37 @@ void HomeyThread::updateMediaPlayer(EntityInterface *entity, const QVariantMap &
     // volume  //volume_set
     if (attr.contains("volume_set"))
     {
-        attributes.insert("volume", int(round(attr.value("volume_set").toDouble()*100)));
+        //attributes.insert("volume", int(round(attr.value("volume_set").toDouble()*100)));
+        entity->updateAttrByIndex(MediaPlayerDef::VOLUME, int(round(attr.value("volume_set").toDouble()*100)));
     }
 
     // media type
-    if (entity->supported_features().indexOf("MEDIA_TYPE") > -1 && attr.value("attributes").toMap().contains("media_content_type"))
+    if (entity->isSupported("MEDIA_TYPE") && attr.value("attributes").toMap().contains("media_content_type"))
     {
-        attributes.insert("mediaType", attr.value("attributes").toMap().value("media_content_type").toString());
+        //attributes.insert("mediaType", attr.value("attributes").toMap().value("media_content_type").toString());
+        entity->updateAttrByIndex(MediaPlayerDef::MEDIATYPE, attr.value("attributes").toMap().value("media_content_type").toString());
     }
 
     // media image
     if (attr.contains("album_art"))
     {
-        attributes.insert("mediaImage", attr.value("album_art"));
+        //attributes.insert("mediaImage", attr.value("album_art"));
+        entity->updateAttrByIndex(MediaPlayerDef::MEDIAIMAGE, attr.value("album_art"));
     }
 
     // media title
     if (attr.contains("speaker_track"))
     {
-        attributes.insert("mediaTitle", attr.value("speaker_track").toString());
+        //attributes.insert("mediaTitle", attr.value("speaker_track").toString());
+        entity->updateAttrByIndex(MediaPlayerDef::MEDIATITLE, attr.value("speaker_track").toString());
     }
 
     // media artist
     if (attr.contains("speaker_artist"))
     {
-        attributes.insert("mediaArtist", attr.value("speaker_artist").toString());
+        //attributes.insert("mediaArtist", attr.value("speaker_artist").toString());
+        entity->updateAttrByIndex(MediaPlayerDef::MEDIAARTIST, attr.value("speaker_artist").toString());
     }
-
-    m_entities->update(entity->entity_id(), attributes);
 }
 
 void HomeyThread::setState(int state)

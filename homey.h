@@ -8,9 +8,10 @@
 #include <QtWebSockets/QWebSocket>
 #include <QTimer>
 #include <QThread>
+#include <QLoggingCategory>
 
 #include "../remote-software/sources/integrations/integration.h"
-#include "../remote-software/sources/integrations/integrationinterface.h"
+#include "../remote-software/sources/integrations/plugininterface.h"
 #include "../remote-software/sources/entities/entitiesinterface.h"
 #include "../remote-software/sources/entities/entityinterface.h"
 #include "../remote-software/sources/notificationsinterface.h"
@@ -20,16 +21,24 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //// HOMEY FACTORY
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-class Homey : public IntegrationInterface
+class Homey : public PluginInterface
 {
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID "YIO.IntegrationInterface" FILE "homey.json")
-    Q_INTERFACES(IntegrationInterface)
+    Q_PLUGIN_METADATA(IID "YIO.PluginInterface" FILE "homey.json")
+    Q_INTERFACES(PluginInterface)
 
 public:
-    explicit Homey() {}
+    explicit Homey() :
+        m_log("homey")
+    {}
 
     void create                     (const QVariantMap& config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj) override;
+    void setLogEnabled              (QtMsgType msgType, bool enable) override
+    {
+        m_log.setEnabled(msgType, enable);
+    }
+private:
+    QLoggingCategory    m_log;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -41,12 +50,13 @@ class HomeyBase : public Integration
     Q_OBJECT
 
 public:
-    explicit HomeyBase(QObject *parent);
+    explicit HomeyBase(QLoggingCategory& log, QObject *parent);
     virtual ~HomeyBase();
 
     Q_INVOKABLE void setup          (const QVariantMap& config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj);
     Q_INVOKABLE void connect	    ();
     Q_INVOKABLE void disconnect	    ();
+    Q_INVOKABLE void sendCommand    (const QString& type, const QString& entity_id, const QString& command, const QVariant& param);
 
 signals:
     void connectSignal              ();
@@ -55,13 +65,13 @@ signals:
 
 
 public slots:
-    void sendCommand                (const QString& type, const QString& entity_id, const QString& command, const QVariant& param);
     void stateHandler               (int state);
 
 private:
-    void updateEntity               (const QString& entity_id, const QVariantMap& attr) {}
+//  void updateEntity               (const QString& entity_id, const QVariantMap& attr) {}
 
     QThread                         m_thread;
+    QLoggingCategory&               m_log;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -73,7 +83,8 @@ class HomeyThread : public QObject
     Q_OBJECT
 
 public:
-    HomeyThread                     (const QVariantMap &config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj);
+    HomeyThread                     (const QVariantMap &config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj,
+                                     QLoggingCategory& log);
 
 signals:
     void stateChanged               (int state);
@@ -118,7 +129,7 @@ private:
     bool                            m_userDisconnect = false;
 
     int                             m_state = 0;
-
+    QLoggingCategory&               m_log;
 };
 
 
