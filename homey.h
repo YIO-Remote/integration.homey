@@ -34,11 +34,16 @@
 
 #include "../remote-software/sources/integrations/integration.h"
 #include "../remote-software/sources/integrations/integrationinterface.h"
+#include "../remote-software/sources/entities/entitiesinterface.h"
+#include "../remote-software/sources/entities/entityinterface.h"
+#include "../remote-software/sources/notificationsinterface.h"
+#include "../remote-software/sources/yioapiinterface.h"
+#include "../remote-software/sources/configinterface.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //// HOMEY FACTORY
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-class Homey : public QObject, IntegrationInterface
+class Homey : public IntegrationInterface
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "YIO.IntegrationInterface" FILE "homey.json")
@@ -47,7 +52,7 @@ class Homey : public QObject, IntegrationInterface
 public:
     explicit Homey() {}
 
-    QMap<QObject *, QVariant> create          (const QVariantMap& config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj) override;
+    void create                     (const QVariantMap& config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj) override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -59,7 +64,8 @@ class HomeyBase : public Integration
     Q_OBJECT
 
 public:
-    explicit HomeyBase() {}
+    explicit HomeyBase(QObject *parent);
+    virtual ~HomeyBase();
 
     Q_INVOKABLE void setup          (const QVariantMap& config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj);
     Q_INVOKABLE void connect	    ();
@@ -113,9 +119,9 @@ private:
     int  convertBrightnessToPercentage (float value);
 
     void updateEntity               (const QString& entity_id, const QVariantMap& attr);
-    void updateLight                (Entity* entity, const QVariantMap& attr);
-    void updateBlind                (Entity* entity, const QVariantMap& attr);
-    void updateMediaPlayer          (Entity* entity, const QVariantMap& attr);
+    void updateLight                (EntityInterface* entity, const QVariantMap& attr);
+    void updateBlind                (EntityInterface* entity, const QVariantMap& attr);
+    void updateMediaPlayer          (EntityInterface* entity, const QVariantMap& attr);
 
     void setState                   (int state);
 
@@ -123,6 +129,8 @@ private:
     NotificationsInterface*         m_notifications;
     YioAPIInterface*                m_api;
     ConfigInterface*                m_config;
+
+    QString                         m_id;
 
     QString                         m_ip;
     QString                         m_token;

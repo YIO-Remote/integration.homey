@@ -30,7 +30,7 @@
 #include "../remote-software/sources/entities/entities.h"
 #include "math.h"
 
-QMap<QObject *, QVariant> Homey::create(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api, QObject *configObj)
+void Homey::create(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api, QObject *configObj)
 {
     QMap<QObject *, QVariant> returnData;
 
@@ -47,15 +47,29 @@ QMap<QObject *, QVariant> Homey::create(const QVariantMap &config, QObject *enti
 
     for (int i=0; i<data.length(); i++)
     {
-        HomeyBase* ha = new HomeyBase();
+        HomeyBase* ha = new HomeyBase(this);
         ha->setup(data[i].toMap(), entities, notifications, api, configObj);
 
         QVariantMap d = data[i].toMap();
         d.insert("mdns", mdns);
+        d.insert("type", config.value("type").toString());
         returnData.insert(ha, d);
     }
 
-    return returnData;
+    emit createDone(returnData);
+}
+
+HomeyBase::HomeyBase(QObject *parent)
+{
+    this->setParent(parent);
+}
+
+HomeyBase::~HomeyBase()
+{
+    if (m_thread.isRunning()) {
+        m_thread.exit();
+        m_thread.wait(5000);
+    }
 }
 
 void HomeyBase::setup(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api, QObject *configObj)
@@ -129,6 +143,8 @@ HomeyThread::HomeyThread(const QVariantMap &config, QObject *entities, QObject *
             QVariantMap map = iter.value().toMap();
             m_ip = map.value("ip").toString();
             m_token = map.value("token").toString();
+        } else if (iter.key() == "id") {
+            m_id = iter.value().toString();
         }
     }
     m_entities = qobject_cast<EntitiesInterface *>(entities);
@@ -183,7 +199,7 @@ void HomeyThread::onTextMessageReceived(const QString &message)
     if (type == "command" && map.value("command").toString() == "get_config")
     {
         // get loaded homey entities
-        QList<QObject *> es = m_entities->getByIntegration("homey");
+        QList<EntityInterface *> es = m_entities->getByIntegration(m_id);
 
         // create return map object
         QVariantMap returnData;
@@ -196,10 +212,10 @@ void HomeyThread::onTextMessageReceived(const QString &message)
 
         // interate throug the list and get the entity ids
 
-        foreach (QObject *value, es)
+        foreach (EntityInterface *value, es)
         {
-            list.append(value->property("entity_id").toString());
-            qDebug() << value->property("entity_id").toString();
+            list.append(value->entity_id());
+            qDebug() << value->entity_id();
         }
         qDebug() << "LIST" << list;
         // insert list to data key in response
@@ -282,7 +298,7 @@ int HomeyThread::convertBrightnessToPercentage(float value)
 
 void HomeyThread::updateEntity(const QString &entity_id, const QVariantMap &attr)
 {
-    Entity *entity = (Entity *)m_entities->get(entity_id);
+    EntityInterface *entity = m_entities->getEntityInterface(entity_id);
     if (entity)
     {
         if (entity->type() == "light")
@@ -300,7 +316,7 @@ void HomeyThread::updateEntity(const QString &entity_id, const QVariantMap &attr
     }
 }
 
-void HomeyThread::updateLight(Entity *entity, const QVariantMap &attr)
+void HomeyThread::updateLight(EntityInterface *entity, const QVariantMap &attr)
 {
     QVariantMap attributes;
 
@@ -334,7 +350,7 @@ void HomeyThread::updateLight(Entity *entity, const QVariantMap &attr)
     m_entities->update(entity->entity_id(), attributes);
 }
 
-void HomeyThread::updateBlind(Entity *entity, const QVariantMap &attr)
+void HomeyThread::updateBlind(EntityInterface *entity, const QVariantMap &attr)
 {
     //    QVariantMap attributes;
 
@@ -353,7 +369,7 @@ void HomeyThread::updateBlind(Entity *entity, const QVariantMap &attr)
     //    m_entities->update(entity->entity_id(), attributes);
 }
 
-void HomeyThread::updateMediaPlayer(Entity *entity, const QVariantMap &attr)
+void HomeyThread::updateMediaPlayer(EntityInterface *entity, const QVariantMap &attr)
 {
     /*  capabilities:
        [ 'speaker_album',
@@ -408,7 +424,7 @@ void HomeyThread::updateMediaPlayer(Entity *entity, const QVariantMap &attr)
     // volume  //volume_set
     if (attr.contains("volume_set"))
     {
-        attributes.insert("volume", attr.value("volume_set").toDouble());
+        attributes.insert("volume", int(round(attr.value("volume_set").toDouble()*100)));
     }
 
     // media type
@@ -556,7 +572,7 @@ void HomeyThread::sendCommand(const QString &type, const QString &entity_id, con
         if (command == "VOLUME_SET")
         {
             map.insert("command", "volume_set");
-            map.insert("value", param);
+            map.insert("value", param.toDouble()/100);
             attributes.insert("volume", param);
             m_entities->update(entity_id, attributes); //buggy homey fix
             webSocketSendCommand(map);
