@@ -11,7 +11,7 @@
 IntegrationInterface::~IntegrationInterface()
 {}
 
-void Homey::create(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api, QObject *configObj)
+void HomeyPlugin::create(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api, QObject *configObj)
 {
     QMap<QObject *, QVariant> returnData;
 
@@ -86,7 +86,7 @@ void HomeyBase::disconnect()
     emit disconnectSignal();
 }
 
-void HomeyBase::sendCommand(const QString &type, const QString &entity_id, const QString &command, const QVariant &param)
+void HomeyBase::sendCommand(const QString &type, const QString &entity_id, int command, const QVariant &param)
 {
     emit sendCommandSignal(type, entity_id, command, param);
 }
@@ -307,7 +307,7 @@ void HomeyThread::updateLight(EntityInterface *entity, const QVariantMap &attr)
     }
 
     // brightness
-    if (entity->isSupported("BRIGHTNESS"))
+    if (entity->isSupported(LightDef::F_BRIGHTNESS))
     {
         if (attr.contains("dim"))
         {
@@ -318,7 +318,7 @@ void HomeyThread::updateLight(EntityInterface *entity, const QVariantMap &attr)
     }
 
     // color
-    if (entity->supported_features().indexOf("COLOR") > -1)
+    if (entity->isSupported(LightDef::F_COLOR))
     {
         QVariant color = attr.value("attributes").toMap().value("rgb_color");
         QVariantList cl(color.toList());
@@ -412,7 +412,7 @@ void HomeyThread::updateMediaPlayer(EntityInterface *entity, const QVariantMap &
     }
 
     // media type
-    if (entity->isSupported("MEDIA_TYPE") && attr.value("attributes").toMap().contains("media_content_type"))
+    if (entity->isSupported(MediaPlayerDef::F_MEDIA_TYPE) && attr.value("attributes").toMap().contains("media_content_type"))
     {
         //attributes.insert("mediaType", attr.value("attributes").toMap().value("media_content_type").toString());
         entity->updateAttrByIndex(MediaPlayerDef::MEDIATYPE, attr.value("attributes").toMap().value("media_content_type").toString());
@@ -473,7 +473,7 @@ void HomeyThread::disconnect()
     setState(2);
 }
 
-void HomeyThread::sendCommand(const QString &type, const QString &entity_id, const QString &command, const QVariant &param)
+void HomeyThread::sendCommand(const QString &type, const QString &entity_id, int command, const QVariant &param)
 {
     QVariantMap map;
     //example
@@ -486,32 +486,32 @@ void HomeyThread::sendCommand(const QString &type, const QString &entity_id, con
     map.insert("deviceId", QVariant(entity_id));
     if (type == "light")
     {
-        if (command == "TOGGLE")
+        if (command == LightDef::C_TOGGLE)
         {
             map.insert("command", QVariant("toggle"));
             map.insert("value", true);
             webSocketSendCommand(map);
         }
-        else if (command == "ON")
+        else if (command == LightDef::C_ON)
         {
             map.insert("command", QVariant("onoff"));
             map.insert("value", true);
             webSocketSendCommand(map);
         }
-        else if (command == "OFF")
+        else if (command == LightDef::C_OFF)
         {
             map.insert("command", QVariant("onoff"));
             map.insert("value", false);
             webSocketSendCommand(map);
         }
-        else if (command == "BRIGHTNESS")
+        else if (command == LightDef::C_BRIGHTNESS)
         {
             map.insert("command", "dim");
             float value = param.toFloat() / 100;
             map.insert("value", value);
             webSocketSendCommand(map);
         }
-        else if (command == "COLOR")
+        else if (command == LightDef::C_COLOR)
         {
             QColor color = param.value<QColor>();
             //QVariantMap data;
@@ -527,25 +527,25 @@ void HomeyThread::sendCommand(const QString &type, const QString &entity_id, con
     }
     if (type == "blind")
     {
-        if (command == "OPEN")
+        if (command == BlindDef::C_OPEN)
         {
             map.insert("command", "windowcoverings_closed");
             map.insert("value", "false");
             webSocketSendCommand(map);
         }
-        else if (command == "CLOSE")
+        else if (command == BlindDef::C_CLOSE)
         {
             map.insert("command", "windowcoverings_closed");
             map.insert("value", "true");
             webSocketSendCommand(map);
         }
-        else if (command == "STOP")
+        else if (command == BlindDef::C_STOP)
         {
             map.insert("command", "windowcoverings_tilt_set");
             map.insert("value", 0);
             webSocketSendCommand(map);
         }
-        else if (command == "POSITION")
+        else if (command == BlindDef::C_POSITION)
         {
             map.insert("command", "windowcoverings_set");
             map.insert("value", param);
@@ -555,7 +555,7 @@ void HomeyThread::sendCommand(const QString &type, const QString &entity_id, con
     if (type == "media_player")
 
     {
-        if (command == "VOLUME_SET")
+        if (command == MediaPlayerDef::C_VOLUME_SET)
         {
             map.insert("command", "volume_set");
             map.insert("value", param.toDouble()/100);
@@ -563,43 +563,43 @@ void HomeyThread::sendCommand(const QString &type, const QString &entity_id, con
             m_entities->update(entity_id, attributes); //buggy homey fix
             webSocketSendCommand(map);
         }
-        else if (command == "PLAY")
+        else if (command == MediaPlayerDef::C_PLAY)
         {
             map.insert("command", "speaker_playing");
             map.insert("value", true);
             webSocketSendCommand(map);
         }
-        else if (command == "STOP")
+        else if (command == MediaPlayerDef::C_STOP)
         {
             map.insert("command", "speaker_playing");
             map.insert("value", false);
             webSocketSendCommand(map);
         }
-        else if (command == "PAUSE")
+        else if (command == MediaPlayerDef::C_PAUSE)
         {
             map.insert("command", "speaker_playing");
             map.insert("value", false);
             webSocketSendCommand(map);
         }
-        else if (command == "PREVIOUS")
+        else if (command == MediaPlayerDef::C_PREVIOUS)
         {
             map.insert("command", "speaker_prev");
             map.insert("value", true);
             webSocketSendCommand(map);
         }
-        else if (command == "NEXT")
+        else if (command == MediaPlayerDef::C_NEXT)
         {
             map.insert("command", "speaker_next");
             map.insert("value", true);
             webSocketSendCommand(map);
         }
-        else if (command == "TURNON")
+        else if (command == MediaPlayerDef::C_TURNON)
         {
             map.insert("command", QVariant("onoff"));
             map.insert("value", true);
             webSocketSendCommand(map);
         }
-        else if (command == "TURNOFF")
+        else if (command == MediaPlayerDef::C_TURNOFF)
         {
             map.insert("command", QVariant("onoff"));
             map.insert("value", false);
