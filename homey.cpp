@@ -269,7 +269,12 @@ void HomeyThread::onTimeout()
     {
         m_websocketReconnect->stop();
 
-        m_notifications->add(true, tr("Cannot connect to Homey."), tr("Reconnect"), "homey");
+        QObject* param = this;
+        m_notifications->add(true, tr("Cannot connect to Homey."), tr("Reconnect"), [](QObject* param){
+            Integration* i = qobject_cast<Integration *>(param);
+            i->connect();
+        }, param);
+
         disconnect();
         m_tries = 0;
     }
