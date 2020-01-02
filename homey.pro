@@ -16,7 +16,7 @@ include($$REMOTE_SRC/qmake-destination-path.pri)
 
 HEADERS         = homey.h \
                   $$REMOTE_SRC/sources/integrations/integration.h \
-                  $$REMOTE_SRC/sources/integrations/integrationinterface.h
+                  $$REMOTE_SRC/sources/integrations/plugininterface.h
 SOURCES         = homey.cpp
 TARGET          = homey
 
