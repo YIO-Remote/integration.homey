@@ -35,8 +35,8 @@
 
 IntegrationInterface::~IntegrationInterface() {}
 
-void HomeyPlugin::create(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api,
-                         QObject *configObj) {
+void HomeyPlugin::create(const QVariantMap &config, EntitiesInterface *entities, NotificationsInterface *notifications,
+                         YioAPIInterface *api, ConfigInterface *configObj) {
     QMap<QObject *, QVariant> returnData;
 
     QVariantList data;
@@ -72,8 +72,8 @@ HomeyBase::~HomeyBase() {
     }
 }
 
-void HomeyBase::setup(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api,
-                      QObject *configObj) {
+void HomeyBase::setup(const QVariantMap &config, EntitiesInterface *entities, NotificationsInterface *notifications,
+                      YioAPIInterface *api, ConfigInterface *configObj) {
     Integration::setup(config, entities);
 
     // crate a new instance and pass on variables
@@ -102,6 +102,7 @@ void HomeyBase::sendCommand(const QString &type, const QString &entity_id, int c
     emit sendCommandSignal(type, entity_id, command, param);
 }
 
+// FIXME use enum
 void HomeyBase::stateHandler(int state) {
     if (state == 0) {
         setState(CONNECTED);
@@ -116,9 +117,9 @@ void HomeyBase::stateHandler(int state) {
 //// Homey THREAD CLASS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-HomeyThread::HomeyThread(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api,
-                         QObject *configObj, QLoggingCategory &log)
-    : m_log(log) {
+HomeyThread::HomeyThread(const QVariantMap &config, EntitiesInterface *entities, NotificationsInterface *notifications,
+                         YioAPIInterface *api, ConfigInterface *configObj, QLoggingCategory &log)
+    : m_notifications(notifications), m_api(api), m_config(configObj), m_log(log) {
     for (QVariantMap::const_iterator iter = config.begin(); iter != config.end(); ++iter) {
         if (iter.key() == "data") {
             QVariantMap map = iter.value().toMap();
@@ -128,11 +129,8 @@ HomeyThread::HomeyThread(const QVariantMap &config, QObject *entities, QObject *
             m_id = iter.value().toString();
         }
     }
-    m_entities = qobject_cast<EntitiesInterface *>(entities);
-    m_notifications = qobject_cast<NotificationsInterface *>(notifications);
-    m_api = qobject_cast<YioAPIInterface *>(api);
-    m_config = qobject_cast<ConfigInterface *>(configObj);
-
+    m_entities = entities;
+    // FIXME magic number
     m_webSocketId = 4;
 
     m_wsReconnectTimer = new QTimer(this);
@@ -172,7 +170,7 @@ void HomeyThread::onTextMessageReceived(const QString &message) {
     //    int id = map.value("id").toInt();
 
     if (type == "connected") {
-        setState(0);
+        setState(IntegrationInterface::CONNECTED);
     }
 
     // handle get config request from homey app
@@ -225,7 +223,7 @@ void HomeyThread::onStateChanged(QAbstractSocket::SocketState state) {
         if (m_webSocket->isValid()) {
             m_webSocket->close();
         }
-        setState(2);
+        setState(IntegrationInterface::DISCONNECTED);
         m_wsReconnectTimer->start();
     }
 }
@@ -235,7 +233,7 @@ void HomeyThread::onError(QAbstractSocket::SocketError error) {
     if (m_webSocket->isValid()) {
         m_webSocket->close();
     }
-    setState(2);
+    setState(IntegrationInterface::DISCONNECTED);
     m_wsReconnectTimer->start();
 }
 
@@ -256,9 +254,10 @@ void HomeyThread::onTimeout() {
         disconnect();
         m_tries = 0;
     } else {
+        // FIXME magic number
         m_webSocketId = 4;
         if (m_state != 1) {
-            setState(1);
+            setState(IntegrationInterface::CONNECTING);
         }
         QString url = QString("ws://").append(m_ip);
         qCDebug(m_log) << "Reconnection attempt" << m_tries + 1 << "to Homey server:" << url;
@@ -427,7 +426,7 @@ void HomeyThread::setState(int state) {
 void HomeyThread::connect() {
     m_userDisconnect = false;
 
-    setState(1);
+    setState(IntegrationInterface::CONNECTING);
 
     // reset the reconnnect trial variable
     m_tries = 0;
@@ -448,7 +447,7 @@ void HomeyThread::disconnect() {
     // turn off the socket
     m_webSocket->close();
 
-    setState(2);
+    setState(IntegrationInterface::DISCONNECTED);
 }
 
 void HomeyThread::sendCommand(const QString &type, const QString &entity_id, int command, const QVariant &param) {

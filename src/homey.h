@@ -52,8 +52,8 @@ class HomeyPlugin : public PluginInterface {
  public:
     HomeyPlugin() : m_log("homey") {}
 
-    void create(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api,
-                QObject* configObj) override;
+    void create(const QVariantMap& config, EntitiesInterface* entities, NotificationsInterface* notifications,
+                YioAPIInterface* api, ConfigInterface* configObj) override;
     void setLogEnabled(QtMsgType msgType, bool enable) override { m_log.setEnabled(msgType, enable); }
 
  private:
@@ -71,8 +71,8 @@ class HomeyBase : public Integration {
     explicit HomeyBase(QLoggingCategory& log, QObject* parent);  // NOLINT we need a non-const reference
     ~HomeyBase() override;
 
-    Q_INVOKABLE void setup(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api,
-                           QObject* configObj);
+    Q_INVOKABLE void setup(const QVariantMap& config, EntitiesInterface* entities,
+                           NotificationsInterface* notifications, YioAPIInterface* api, ConfigInterface* configObj);
     Q_INVOKABLE void connect() override;
     Q_INVOKABLE void disconnect() override;
     Q_INVOKABLE void sendCommand(const QString& type, const QString& entity_id, int command,
@@ -102,7 +102,8 @@ class HomeyThread : public QObject {
     Q_OBJECT
 
  public:
-    HomeyThread(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api, QObject* configObj,
+    HomeyThread(const QVariantMap& config, EntitiesInterface* entities, NotificationsInterface* notifications,
+                YioAPIInterface* api, ConfigInterface* configObj,
                 QLoggingCategory& log);  // NOLINT we need a non-const reference
 
  signals:
@@ -138,8 +139,7 @@ class HomeyThread : public QObject {
     YioAPIInterface*        m_api;
     ConfigInterface*        m_config;
 
-    QString m_id;
-
+    QString           m_id;
     QString           m_ip;
     QString           m_token;
     QWebSocket*       m_webSocket;
