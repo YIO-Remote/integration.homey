@@ -38,6 +38,8 @@ HomeyPlugin::HomeyPlugin() : Plugin("homey", USE_WORKER_THREAD) {}
 Integration *HomeyPlugin::createIntegration(const QVariantMap &config, EntitiesInterface *entities,
                                             NotificationsInterface *notifications, YioAPIInterface *api,
                                             ConfigInterface *configObj) {
+    qCInfo(m_logCategory) << "Creating Homey integration plugin" << PLUGIN_VERSION;
+
     return new Homey(config, entities, notifications, api, configObj, this);
 }
 
