@@ -1,10 +1,26 @@
-# Plugin VERSION
-HOMEY_VERSION = $$system(git describe --match "v[0-9]*" --tags HEAD --always)
-DEFINES += PLUGIN_VERSION=\\\"$$HOMEY_VERSION\\\"
-
 TEMPLATE  = lib
 CONFIG   += c++14 plugin
 QT       += websockets core quick
+
+# Plugin VERSION
+GIT_HASH = "$$system(git log -1 --format="%H")"
+GIT_BRANCH = "$$system(git rev-parse --abbrev-ref HEAD)"
+GIT_VERSION = "$$system(git describe --match "v[0-9]*" --tags HEAD --always)"
+HOMEY_VERSION = $$replace(GIT_VERSION, v, "")
+DEFINES += PLUGIN_VERSION=\\\"$$HOMEY_VERSION\\\"
+
+# build timestamp
+win32 {
+    # not the same format as on Unix systems, but good enough...
+    BUILDDATE=$$system(date /t)
+} else {
+    BUILDDATE=$$system(date +"%Y-%m-%dT%H:%M:%S")
+}
+CONFIG(debug, debug|release) {
+    DEBUG_BUILD = true
+} else {
+    DEBUG_BUILD = false
+}
 
 INTG_LIB_PATH = $$(YIO_SRC)
 isEmpty(INTG_LIB_PATH) {
@@ -23,7 +39,7 @@ isEmpty(INTG_LIB_PATH) {
     error( "Cannot find the yio-plugin-lib.pri file!" )
 }
 
-QMAKE_SUBSTITUTES += homey.json.in
+QMAKE_SUBSTITUTES += homey.json.in version.txt.in
 # output path must be included for the output file from QMAKE_SUBSTITUTES
 INCLUDEPATH += $$OUT_PWD
 HEADERS  += src/homey.h
@@ -42,3 +58,8 @@ unix {
     target.path = /usr/lib
     INSTALLS += target
 }
+
+DISTFILES += \
+    homey.json.in \
+    version.txt.in \
+    README.md
