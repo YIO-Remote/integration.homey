@@ -6,7 +6,7 @@
     <message>
       <location filename="../src/homey.cpp" line="177"/>
       <source>Cannot connect to Homey.</source>
-      <translation>Impossible de se connecter au Homey.</translation>
+      <translation>Impossible de se connecter à Homey.</translation>
     </message>
     <message>
       <location filename="../src/homey.cpp" line="177"/>
