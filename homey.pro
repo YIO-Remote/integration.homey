@@ -63,3 +63,47 @@ DISTFILES += \
     homey.json.in \
     version.txt.in \
     README.md
+
+# === start TRANSLATION section =======================================
+lupdate_only{
+SOURCES = src/homey.cpp
+}
+
+TRANSLATIONS = translations/bg_BG.ts \
+               translations/cs_CZ.ts \
+               translations/da_DK.ts \
+               translations/de_DE.ts \
+               translations/el_GR.ts \
+               translations/en_US.ts \
+               translations/es_ES.ts \
+               translations/et_EE.ts \
+               translations/fi_FI.ts \
+               translations/fr_CA.ts \
+               translations/fr_FR.ts \
+               translations/ga_IE.ts \
+               translations/hr_HR.ts \
+               translations/hu_HU.ts \
+               translations/it_IT.ts \
+               translations/lt_LT.ts \
+               translations/lv_LV.ts \
+               translations/mt_MT.ts \
+               translations/nl_NL.ts \
+               translations/no_NO.ts \
+               translations/pl_PL.ts \
+               translations/pt_BR.ts \
+               translations/pt_PT.ts \
+               translations/ro_RO.ts \
+               translations/sk_SK.ts \
+               translations/sl_SI.ts \
+               translations/sv_SE.ts
+
+#QMAKE_LUPDATE & _LRELEASE vars are set in qmake-destiation-path.pri
+!isEmpty(QMAKE_LUPDATE):exists("$$QMAKE_LUPDATE") {
+    message("Using Qt linguist tools: '$$QMAKE_LUPDATE', '$$QMAKE_LRELEASE'")
+    command = $$QMAKE_LUPDATE homey.pro
+    system($$command) | error("Failed to run: $$command")
+    command = $$QMAKE_LRELEASE homey.pro
+    system($$command) | error("Failed to run: $$command")
+} else {
+    warning("Qt linguist cmd line tools lupdate / lrelease not found: translations will NOT be compiled and build will most likely fail due to missing .qm files!")
+}
