@@ -307,6 +307,7 @@ void Homey::updateMediaPlayer(EntityInterface *entity, const QVariantMap &attr) 
         }
     }
 
+    // TODO
     // source
     // if (entity->supported_features().indexOf("SOURCE") > -1 && attr.value("attributes").toMap().contains("source")) {
     //    attributes.insert("source", attr.value("attributes").toMap().value("source").toString());
