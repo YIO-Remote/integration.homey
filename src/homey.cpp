@@ -342,6 +342,7 @@ void Homey::updateMediaPlayer(EntityInterface *entity, const QVariantMap &attr) 
 }
 
 void Homey::updateClimate(EntityInterface *entity, const QVariantMap &attr) {
+    // TODO
     Q_UNUSED(entity);
     Q_UNUSED(attr);
 }
