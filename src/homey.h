@@ -93,6 +93,8 @@ class Homey : public Integration {
     void updateLight(EntityInterface* entity, const QVariantMap& attr);
     void updateBlind(EntityInterface* entity, const QVariantMap& attr);
     void updateMediaPlayer(EntityInterface* entity, const QVariantMap& attr);
+    void updateClimate(EntityInterface* entity, const QVariantMap& attr);
+    void updateSwitch(EntityInterface* entity, const QVariantMap& attr);
 
  private:
     QString     m_id;

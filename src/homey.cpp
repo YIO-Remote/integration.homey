@@ -30,14 +30,18 @@
 
 #include "math.h"
 #include "yio-interface/entities/blindinterface.h"
+#include "yio-interface/entities/climateinterface.h"
 #include "yio-interface/entities/lightinterface.h"
 #include "yio-interface/entities/mediaplayerinterface.h"
+#include "yio-interface/entities/switchinterface.h"
 
 HomeyPlugin::HomeyPlugin() : Plugin("homey", USE_WORKER_THREAD) {}
 
 Integration *HomeyPlugin::createIntegration(const QVariantMap &config, EntitiesInterface *entities,
                                             NotificationsInterface *notifications, YioAPIInterface *api,
                                             ConfigInterface *configObj) {
+    qCInfo(m_logCategory) << "Creating Homey integration plugin" << PLUGIN_VERSION;
+
     return new Homey(config, entities, notifications, api, configObj, this);
 }
 
@@ -51,8 +55,8 @@ Homey::Homey(const QVariantMap &config, EntitiesInterface *entities, Notificatio
     for (QVariantMap::const_iterator iter = config.begin(); iter != config.end(); ++iter) {
         if (iter.key() == Integration::OBJ_DATA) {
             QVariantMap map = iter.value().toMap();
-            m_ip = map.value(Integration::KEY_DATA_IP).toString();
-            m_token = map.value(Integration::KEY_DATA_TOKEN).toString();
+            m_ip            = map.value(Integration::KEY_DATA_IP).toString();
+            m_token         = map.value(Integration::KEY_DATA_TOKEN).toString();
         }
     }
 
@@ -123,7 +127,7 @@ void Homey::onTextMessageReceived(const QString &message) {
         returnData.insert("devices", list);
 
         // convert map to json
-        QJsonDocument doc = QJsonDocument::fromVariant(returnData);
+        QJsonDocument doc     = QJsonDocument::fromVariant(returnData);
         QString       message = doc.toJson(QJsonDocument::JsonFormat::Compact);
 
         // send message
@@ -195,7 +199,7 @@ void Homey::onTimeout() {
 }
 
 void Homey::webSocketSendCommand(const QVariantMap &data) {
-    QJsonDocument doc = QJsonDocument::fromVariant(data);
+    QJsonDocument doc     = QJsonDocument::fromVariant(data);
     QString       message = doc.toJson(QJsonDocument::JsonFormat::Compact);
     m_webSocket->sendTextMessage(message);
 }
@@ -213,6 +217,12 @@ void Homey::updateEntity(const QString &entity_id, const QVariantMap &attr) {
         }
         if (entity->type() == "media_player") {
             updateMediaPlayer(entity, attr);
+        }
+        if (entity->type() == "climate") {
+            updateClimate(entity, attr);
+        }
+        if (entity->type() == "switch") {
+            updateSwitch(entity, attr);
         }
     }
 }
@@ -242,6 +252,8 @@ void Homey::updateLight(EntityInterface *entity, const QVariantMap &attr) {
 }
 
 void Homey::updateBlind(EntityInterface *entity, const QVariantMap &attr) {
+    Q_UNUSED(entity);
+    Q_UNUSED(attr);
     //    QVariantMap attributes;
 
     //    // state
@@ -295,6 +307,7 @@ void Homey::updateMediaPlayer(EntityInterface *entity, const QVariantMap &attr) 
         }
     }
 
+    // FIXME
     // source
     // if (entity->supported_features().indexOf("SOURCE") > -1 && attr.value("attributes").toMap().contains("source")) {
     //    attributes.insert("source", attr.value("attributes").toMap().value("source").toString());
@@ -326,6 +339,19 @@ void Homey::updateMediaPlayer(EntityInterface *entity, const QVariantMap &attr) 
     // media artist
     if (attr.contains("speaker_artist")) {
         entity->updateAttrByIndex(MediaPlayerDef::MEDIAARTIST, attr.value("speaker_artist").toString());
+    }
+}
+
+void Homey::updateClimate(EntityInterface *entity, const QVariantMap &attr) {
+    // FIXME
+    Q_UNUSED(entity);
+    Q_UNUSED(attr);
+}
+
+void Homey::updateSwitch(EntityInterface *entity, const QVariantMap &attr) {
+    // onoff to state.
+    if (attr.contains("onoff")) {
+        entity->setState(attr.value("onoff").toBool() ? SwitchDef::ON : SwitchDef::OFF);
     }
 }
 
