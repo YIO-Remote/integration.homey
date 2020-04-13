@@ -307,7 +307,7 @@ void Homey::updateMediaPlayer(EntityInterface *entity, const QVariantMap &attr) 
         }
     }
 
-    // TODO
+    // FIXME
     // source
     // if (entity->supported_features().indexOf("SOURCE") > -1 && attr.value("attributes").toMap().contains("source")) {
     //    attributes.insert("source", attr.value("attributes").toMap().value("source").toString());
@@ -343,7 +343,7 @@ void Homey::updateMediaPlayer(EntityInterface *entity, const QVariantMap &attr) 
 }
 
 void Homey::updateClimate(EntityInterface *entity, const QVariantMap &attr) {
-    // TODO
+    // FIXME
     Q_UNUSED(entity);
     Q_UNUSED(attr);
 }
