@@ -382,14 +382,14 @@ void Homey::disconnect() {
     setState(DISCONNECTED);
 }
 
-void Homey::sendCommand(const QString &type, const QString &entity_id, int command, const QVariant &param) {
+void Homey::sendCommand(const QString &type, const QString &entityId, int command, const QVariant &param) {
     // example
     // {"command":"onoff","deviceId":"78f3ab16-c622-4bd7-aebf-3ca981e41375","type":"command","value":true}
 
     // TODO(zehnm) enhance webSocketSendCommand with command / value arguments to reduce QVariantMap overhead
     QVariantMap map;
     map.insert("type", "command");
-    map.insert("deviceId", QVariant(entity_id));
+    map.insert("deviceId", QVariant(entityId));
 
     if (type == "light") {
         if (command == LightDef::C_TOGGLE) {
@@ -445,7 +445,7 @@ void Homey::sendCommand(const QString &type, const QString &entity_id, int comma
             map.insert("value", param.toDouble() / 100);
             QVariantMap attributes;
             attributes.insert("volume", param);
-            m_entities->update(entity_id, attributes);  // buggy homey fix
+            m_entities->update(entityId, attributes);  // buggy homey fix
             webSocketSendCommand(map);
         } else if (command == MediaPlayerDef::C_PLAY) {
             map.insert("command", "speaker_playing");
