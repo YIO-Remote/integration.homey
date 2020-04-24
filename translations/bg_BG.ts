@@ -6,12 +6,12 @@
     <message>
       <location filename="../src/homey.cpp" line="177"/>
       <source>Cannot connect to Homey.</source>
-      <translation type="unfinished">Cannot connect to Homey.</translation>
+      <translation>Не може да се установи връзка с Homey.</translation>
     </message>
     <message>
       <location filename="../src/homey.cpp" line="177"/>
       <source>Reconnect</source>
-      <translation type="unfinished">Reconnect</translation>
+      <translation>Повторно свързване</translation>
     </message>
   </context>
 </TS>
