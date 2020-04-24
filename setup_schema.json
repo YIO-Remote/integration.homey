@@ -1,0 +1,29 @@
+{
+    "$schema": "http://json-schema.org",
+    "$id": "http://yio-remote.com/homey.json",
+    "type": "object",
+    "title": "YIO Integration Homey Schema",
+    "description": "Required data points to set up a Homey integrations.",
+    "default": {},
+    "additionalProperties": true,
+    "examples": [
+        {
+            "ip": ""
+        }
+    ],
+    "required": [
+        "ip"
+    ],
+    "properties": {
+        "ip": {
+            "$id": "#/properties/ip",
+            "type": "string",
+            "title": "The ip schema",
+            "description": "The IP address and port of your Homey server.",
+            "default": "",
+            "examples": [
+                "192.168.100.2:8936"
+            ]
+        }
+    }
+}
