@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright (C) 2019 Marton Borzak <hello@martonborzak.com>
+ * Copyright (C) 2019-2020 Marton Borzak <hello@martonborzak.com>
  * Copyright (C) 2019 Christian Riedl <ric@rts.co.at>
  * Copyright (C) 2019 Niels de Klerk <hello@martonborzak.com>
  *
@@ -97,12 +97,12 @@ class Homey : public Integration {
     void updateSwitch(EntityInterface* entity, const QVariantMap& attr);
 
  private:
-    QString     m_id;
-    QString     m_ip;
-    QString     m_token;
-    QWebSocket* m_webSocket;
-    QTimer*     m_wsReconnectTimer;
-    int         m_tries;
-    int         m_webSocketId;
-    bool        m_userDisconnect = false;
+    QString          m_ip;
+    QString          m_token;
+    QWebSocket*      m_webSocket;
+    QTimer*          m_wsReconnectTimer;
+    int              m_tries;
+    int              m_webSocketId;
+    bool             m_userDisconnect = false;
+    YioAPIInterface* m_api;
 };

@@ -6,11 +6,6 @@
     "description": "Required data points to set up a Homey integrations.",
     "default": {},
     "additionalProperties": true,
-    "examples": [
-        {
-            "ip": ""
-        }
-    ],
     "required": [
         "ip"
     ],
@@ -18,7 +13,7 @@
         "ip": {
             "$id": "#/properties/ip",
             "type": "string",
-            "title": "The ip schema",
+            "title": "IP address and port",
             "description": "The IP address and port of your Homey server.",
             "default": "",
             "examples": [
