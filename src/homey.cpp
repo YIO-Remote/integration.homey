@@ -101,6 +101,37 @@ void Homey::onTextMessageReceived(const QString &message) {
         setState(CONNECTED);
     }
 
+    if (type == "command" && map.value("command").toString() == "getEntities") {
+        // get loaded homey entities
+        QList<EntityInterface *> es = m_entities->getByIntegration(integrationId());
+
+        // create return map object
+        QVariantMap returnData;
+
+        // set type
+        returnData.insert("type", "getEntities");
+
+        // create list to store entity ids
+        QStringList list;
+
+        // interate throug the list and get the entity ids
+
+        for (EntityInterface *value : es) {
+            list.append(value->entity_id());
+            qCDebug(m_logCategory) << value->entity_id();
+        }
+        qCDebug(m_logCategory) << "LIST" << list;
+        // insert list to data key in response
+        returnData.insert("devices", list);
+
+        // convert map to json
+        QJsonDocument doc     = QJsonDocument::fromVariant(returnData);
+        QString       message = doc.toJson(QJsonDocument::JsonFormat::Compact);
+
+        // send message
+        m_webSocket->sendTextMessage(message);
+    }
+
     // get all the entities from the homey app
     if (type == "sendEntities") {
         QVariantList availableEntities = map.value("available_entities").toList();
