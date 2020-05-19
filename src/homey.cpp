@@ -141,6 +141,7 @@ void Homey::onTextMessageReceived(const QString &message) {
         for (int i = 0; i < availableEntities.length(); i++) {
             // add entity to allAvailableEntities list
             QVariantMap entity = availableEntities[i].toMap();
+            entity.insert("integration", integrationId());
             if (!addAvailableEntity(entity.value("entity_id").toString(), entity.value("type").toString(),
                                     entity.value("integration").toString(), entity.value("friendly_name").toString(),
                                     entity.value("supported_features").toStringList())) {
