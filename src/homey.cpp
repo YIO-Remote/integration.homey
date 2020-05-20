@@ -137,8 +137,6 @@ void Homey::onTextMessageReceived(const QString &message) {
     if (type == "sendEntities") {
         QVariantList availableEntities = map.value("available_entities").toList();
 
-        bool success = true;
-
         for (int i = 0; i < availableEntities.length(); i++) {
             // add entity to allAvailableEntities list
             QVariantMap entity = availableEntities[i].toMap();
@@ -148,18 +146,13 @@ void Homey::onTextMessageReceived(const QString &message) {
                                     entity.value("supported_features").toStringList())) {
                 qCWarning(m_logCategory) << "Failed to add entity to the available entities list:"
                                          << entity.value("entity_id").toString();
-                success = false;
             }
 
             // create an entity
             if (!m_api->addEntity(entity)) {
-                qCWarning(m_logCategory) << "Failed to create entity:" << entity.value("entity_id").toString();
-                success = false;
+                qCWarning(m_logCategory) << "Failed to create entity, it could already exist:"
+                                         << entity.value("entity_id").toString();
             }
-        }
-
-        if (!success) {
-            m_notifications->add(true, tr("Failed to add entities from: %1").arg(friendlyName()));
         }
     }
 
