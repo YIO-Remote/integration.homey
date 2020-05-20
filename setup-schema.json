@@ -13,11 +13,11 @@
         "ip": {
             "$id": "#/properties/ip",
             "type": "string",
-            "title": "IP address and port",
-            "description": "The IP address and port of your Homey server.",
+            "title": "IP address",
+            "description": "The IP address or hostname of your Homey server.",
             "default": "",
             "examples": [
-                "192.168.100.2:8936"
+                "192.168.100.2, homey.local"
             ]
         }
     }

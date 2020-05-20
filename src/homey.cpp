@@ -61,6 +61,7 @@ Homey::Homey(const QVariantMap &config, EntitiesInterface *entities, Notificatio
     }
 
     m_api = api;
+    m_url = QString("ws://").append(m_ip).append(QString(":8936"));
 
     // FIXME magic number
     m_webSocketId = 4;
@@ -218,9 +219,8 @@ void Homey::onTimeout() {
             setState(CONNECTING);
         }
 
-        QString url = QString("ws://").append(m_ip);
-        qCDebug(m_logCategory) << "Reconnection attempt" << m_tries + 1 << "to Homey server:" << url;
-        m_webSocket->open(QUrl(url));
+        qCDebug(m_logCategory) << "Reconnection attempt" << m_tries + 1 << "to Homey server:" << m_url;
+        m_webSocket->open(QUrl(m_url));
 
         m_tries++;
     }
@@ -392,9 +392,8 @@ void Homey::connect() {
     m_tries = 0;
 
     // turn on the websocket connection
-    QString url = QString("ws://").append(m_ip);
-    qCDebug(m_logCategory) << "Connecting to Homey server:" << url;
-    m_webSocket->open(QUrl(url));
+    qCDebug(m_logCategory) << "Connecting to Homey server:" << m_url;
+    m_webSocket->open(QUrl(m_url));
 }
 
 void Homey::disconnect() {

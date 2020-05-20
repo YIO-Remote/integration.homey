@@ -98,6 +98,7 @@ class Homey : public Integration {
 
  private:
     QString          m_ip;
+    QString          m_url;
     QString          m_token;
     QWebSocket*      m_webSocket;
     QTimer*          m_wsReconnectTimer;
