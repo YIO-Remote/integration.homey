@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright (C) 2019 Marton Borzak <hello@martonborzak.com>
+ * Copyright (C) 2019-2020 Marton Borzak <hello@martonborzak.com>
  * Copyright (C) 2019 Christian Riedl <ric@rts.co.at>
  * Copyright (C) 2019 Niels de Klerk <hello@martonborzak.com>
  *
@@ -60,6 +60,9 @@ Homey::Homey(const QVariantMap &config, EntitiesInterface *entities, Notificatio
         }
     }
 
+    m_api = api;
+    m_url = QString("ws://").append(m_ip).append(QString(":8936"));
+
     // FIXME magic number
     m_webSocketId = 4;
 
@@ -71,14 +74,12 @@ Homey::Homey(const QVariantMap &config, EntitiesInterface *entities, Notificatio
     m_webSocket = new QWebSocket;
     m_webSocket->setParent(this);
 
-    QObject::connect(m_webSocket, SIGNAL(textMessageReceived(const QString &)), this,
-                     SLOT(onTextMessageReceived(const QString &)));
-    QObject::connect(m_webSocket, SIGNAL(error(QAbstractSocket::SocketError)), this,
-                     SLOT(onError(QAbstractSocket::SocketError)));
-    QObject::connect(m_webSocket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this,
-                     SLOT(onStateChanged(QAbstractSocket::SocketState)));
+    QObject::connect(m_webSocket, &QWebSocket::textFrameReceived, this, &Homey::onTextMessageReceived);
+    QObject::connect(m_webSocket, static_cast<void (QWebSocket::*)(QAbstractSocket::SocketError)>(&QWebSocket::error),
+                     this, &Homey::onError);
+    QObject::connect(m_webSocket, &QWebSocket::stateChanged, this, &Homey::onStateChanged);
 
-    QObject::connect(m_wsReconnectTimer, SIGNAL(timeout()), this, SLOT(onTimeout()));
+    QObject::connect(m_wsReconnectTimer, &QTimer::timeout, this, &Homey::onTimeout);
 }
 
 void Homey::onTextMessageReceived(const QString &message) {
@@ -96,22 +97,20 @@ void Homey::onTextMessageReceived(const QString &message) {
     }
 
     QString type = map.value("type").toString();
-    //    int id = map.value("id").toInt();
 
     if (type == "connected") {
         setState(CONNECTED);
     }
 
-    // handle get config request from homey app
-    if (type == "command" && map.value("command").toString() == "get_config") {
+    if (type == "command" && map.value("command").toString() == "getEntities") {
         // get loaded homey entities
-        QList<EntityInterface *> es = m_entities->getByIntegration(m_id);
+        QList<EntityInterface *> es = m_entities->getByIntegration(integrationId());
 
         // create return map object
         QVariantMap returnData;
 
         // set type
-        returnData.insert("type", "sendConfig");
+        returnData.insert("type", "getEntities");
 
         // create list to store entity ids
         QStringList list;
@@ -132,6 +131,36 @@ void Homey::onTextMessageReceived(const QString &message) {
 
         // send message
         m_webSocket->sendTextMessage(message);
+    }
+
+    // get all the entities from the homey app
+    if (type == "sendEntities") {
+        QVariantList availableEntities = map.value("available_entities").toList();
+
+        bool success = true;
+
+        for (int i = 0; i < availableEntities.length(); i++) {
+            // add entity to allAvailableEntities list
+            QVariantMap entity = availableEntities[i].toMap();
+            entity.insert("integration", integrationId());
+            if (!addAvailableEntity(entity.value("entity_id").toString(), entity.value("type").toString(),
+                                    entity.value("integration").toString(), entity.value("friendly_name").toString(),
+                                    entity.value("supported_features").toStringList())) {
+                qCWarning(m_logCategory) << "Failed to add entity to the available entities list:"
+                                         << entity.value("entity_id").toString();
+                success = false;
+            }
+
+            // create an entity
+            if (!m_api->addEntity(entity)) {
+                qCWarning(m_logCategory) << "Failed to create entity:" << entity.value("entity_id").toString();
+                success = false;
+            }
+        }
+
+        if (!success) {
+            m_notifications->add(true, tr("Failed to add entities from: %1").arg(friendlyName()));
+        }
     }
 
     // handle fetch states from homey app
@@ -190,9 +219,8 @@ void Homey::onTimeout() {
             setState(CONNECTING);
         }
 
-        QString url = QString("ws://").append(m_ip);
-        qCDebug(m_logCategory) << "Reconnection attempt" << m_tries + 1 << "to Homey server:" << url;
-        m_webSocket->open(QUrl(url));
+        qCDebug(m_logCategory) << "Reconnection attempt" << m_tries + 1 << "to Homey server:" << m_url;
+        m_webSocket->open(QUrl(m_url));
 
         m_tries++;
     }
@@ -364,9 +392,8 @@ void Homey::connect() {
     m_tries = 0;
 
     // turn on the websocket connection
-    QString url = QString("ws://").append(m_ip);
-    qCDebug(m_logCategory) << "Connecting to Homey server:" << url;
-    m_webSocket->open(QUrl(url));
+    qCDebug(m_logCategory) << "Connecting to Homey server:" << m_url;
+    m_webSocket->open(QUrl(m_url));
 }
 
 void Homey::disconnect() {

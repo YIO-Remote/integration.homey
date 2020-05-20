@@ -125,4 +125,4 @@ RESOURCES += \
     translations.qrc
 
 # Add setup schema to metadata
-CFG_SCHEMA = "$$cat($$PWD/setup_schema.json)"
+CFG_SCHEMA = "$$cat($$PWD/setup-schema.json)"
