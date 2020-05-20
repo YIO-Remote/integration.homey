@@ -6,7 +6,7 @@
     <message>
       <location filename="../src/homey.cpp" line="160"/>
       <source>Failed to add entities from: %1</source>
-      <translation type="unfinished">Failed to add entities from: %1</translation>
+      <translation>Fehler beim Hinzufügen von Geräten: %1</translation>
     </message>
     <message>
       <location filename="../src/homey.cpp" line="204"/>
