@@ -130,7 +130,9 @@ void Homey::onTextMessageReceived(const QString &message) {
         QString       message = doc.toJson(QJsonDocument::JsonFormat::Compact);
 
         // send message
-        m_webSocket->sendTextMessage(message);
+        if (m_webSocket->isValid()) {
+            m_webSocket->sendTextMessage(message);
+        }
     }
 
     // get all the entities from the homey app
@@ -213,6 +215,7 @@ void Homey::onTimeout() {
         }
 
         qCDebug(m_logCategory) << "Reconnection attempt" << m_tries + 1 << "to Homey server:" << m_url;
+        disconnect();
         m_webSocket->open(QUrl(m_url));
 
         m_tries++;
@@ -222,7 +225,9 @@ void Homey::onTimeout() {
 void Homey::webSocketSendCommand(const QVariantMap &data) {
     QJsonDocument doc     = QJsonDocument::fromVariant(data);
     QString       message = doc.toJson(QJsonDocument::JsonFormat::Compact);
-    m_webSocket->sendTextMessage(message);
+    if (m_webSocket->isValid()) {
+        m_webSocket->sendTextMessage(message);
+    }
 }
 
 int Homey::convertBrightnessToPercentage(float value) { return static_cast<int>(round(value * 100)); }
