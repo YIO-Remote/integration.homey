@@ -11,7 +11,7 @@
     <message>
       <location filename="../src/homey.cpp" line="204"/>
       <source>Cannot connect to Homey.</source>
-      <translation type="unfinished">Cannot connect to Homey.</translation>
+      <translation>Не удается подключиться к Homey.</translation>
     </message>
     <message>
       <location filename="../src/homey.cpp" line="204"/>
