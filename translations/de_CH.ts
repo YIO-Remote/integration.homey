@@ -6,17 +6,17 @@
     <message>
       <location filename="../src/homey.cpp" line="160"/>
       <source>Failed to add entities from: %1</source>
-      <translation type="unfinished">Failed to add entities from: %1</translation>
+      <translation>Han's nöd gschaft Grät hinzuzfüegä vo: %1</translation>
     </message>
     <message>
       <location filename="../src/homey.cpp" line="204"/>
       <source>Cannot connect to Homey.</source>
-      <translation type="unfinished">Cannot connect to Homey.</translation>
+      <translation>Chan nöd zum Homey verbindä.</translation>
     </message>
     <message>
       <location filename="../src/homey.cpp" line="204"/>
       <source>Reconnect</source>
-      <translation type="unfinished">Reconnect</translation>
+      <translation>Erneut verbindä</translation>
     </message>
   </context>
 </TS>
