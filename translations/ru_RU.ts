@@ -16,7 +16,7 @@
     <message>
       <location filename="../src/homey.cpp" line="204"/>
       <source>Reconnect</source>
-      <translation type="unfinished">Reconnect</translation>
+      <translation>Переподключить</translation>
     </message>
   </context>
 </TS>
