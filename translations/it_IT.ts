@@ -4,17 +4,12 @@
   <context>
     <name>Homey</name>
     <message>
-      <location filename="../src/homey.cpp" line="160"/>
-      <source>Failed to add entities from: %1</source>
-      <translation>Impossibile aggiungere entità da: %1</translation>
-    </message>
-    <message>
-      <location filename="../src/homey.cpp" line="204"/>
+      <location filename="../src/homey.cpp" line="201"/>
       <source>Cannot connect to Homey.</source>
       <translation>Impossibile connettersi a Homey.</translation>
     </message>
     <message>
-      <location filename="../src/homey.cpp" line="204"/>
+      <location filename="../src/homey.cpp" line="201"/>
       <source>Reconnect</source>
       <translation>Riconnetti</translation>
     </message>
