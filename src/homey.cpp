@@ -35,7 +35,7 @@
 #include "yio-interface/entities/mediaplayerinterface.h"
 #include "yio-interface/entities/switchinterface.h"
 
-HomeyPlugin::HomeyPlugin() : Plugin("homey", USE_WORKER_THREAD) {}
+HomeyPlugin::HomeyPlugin() : Plugin("yio.plugin.homey", USE_WORKER_THREAD) {}
 
 Integration *HomeyPlugin::createIntegration(const QVariantMap &config, EntitiesInterface *entities,
                                             NotificationsInterface *notifications, YioAPIInterface *api,
@@ -55,8 +55,8 @@ Homey::Homey(const QVariantMap &config, EntitiesInterface *entities, Notificatio
     for (QVariantMap::const_iterator iter = config.begin(); iter != config.end(); ++iter) {
         if (iter.key() == Integration::OBJ_DATA) {
             QVariantMap map = iter.value().toMap();
-            m_ip            = map.value(Integration::KEY_DATA_IP).toString();
-            m_token         = map.value(Integration::KEY_DATA_TOKEN).toString();
+            m_ip = map.value(Integration::KEY_DATA_IP).toString();
+            m_token = map.value(Integration::KEY_DATA_TOKEN).toString();
         }
     }
 
@@ -126,7 +126,7 @@ void Homey::onTextMessageReceived(const QString &message) {
         returnData.insert("devices", list);
 
         // convert map to json
-        QJsonDocument doc     = QJsonDocument::fromVariant(returnData);
+        QJsonDocument doc = QJsonDocument::fromVariant(returnData);
         QString       message = doc.toJson(QJsonDocument::JsonFormat::Compact);
 
         // send message
@@ -223,14 +223,16 @@ void Homey::onTimeout() {
 }
 
 void Homey::webSocketSendCommand(const QVariantMap &data) {
-    QJsonDocument doc     = QJsonDocument::fromVariant(data);
+    QJsonDocument doc = QJsonDocument::fromVariant(data);
     QString       message = doc.toJson(QJsonDocument::JsonFormat::Compact);
     if (m_webSocket->isValid()) {
         m_webSocket->sendTextMessage(message);
     }
 }
 
-int Homey::convertBrightnessToPercentage(float value) { return static_cast<int>(round(value * 100)); }
+int Homey::convertBrightnessToPercentage(float value) {
+    return static_cast<int>(round(value * 100));
+}
 
 void Homey::updateEntity(const QString &entity_id, const QVariantMap &attr) {
     EntityInterface *entity = m_entities->getEntityInterface(entity_id);
